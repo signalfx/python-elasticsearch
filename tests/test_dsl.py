@@ -54,9 +54,9 @@ class TestTracing(unittest.TestCase):
         self.assertEqual(span.tags, {
             'component': 'elasticsearch-py',
             'db.type': 'elasticsearch',
-            'db.statement': {
+            'db.statement': str({
                 'query': {'bool': {'filter': [{'term': {'author': 'testing'}}]}}
-            },
+            }),
             'span.kind': 'client',
             'elasticsearch.url': '/test-index/_search',
             'elasticsearch.method': 'GET',
@@ -82,8 +82,8 @@ class TestTracing(unittest.TestCase):
 
         article = Article(
             meta={'id': 2},
-            title='About searching',
             body='A few words here, a few words there',
+            title='About searching',
         )
         res = article.save()
 
@@ -95,10 +95,10 @@ class TestTracing(unittest.TestCase):
         self.assertEqual(span.tags, {
             'component': 'elasticsearch-py',
             'db.type': 'elasticsearch',
-            'db.statement': {
+            'db.statement': str({
                 'body': 'A few words here, a few words there',
                 'title': 'About searching'
-            },
+            }),
             'span.kind': 'client',
             'elasticsearch.url': '/test-index/article/2',
             'elasticsearch.method': 'PUT',

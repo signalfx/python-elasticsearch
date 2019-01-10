@@ -43,7 +43,7 @@ class TestTracing(unittest.TestCase):
         self.assertEqual(es_span.tags, {
             'component': 'elasticsearch-py',
             'db.type': 'elasticsearch',
-            'db.statement': body,
+            'db.statement': str(body),
             'span.kind': 'client',
             'elasticsearch.url': '/test-index/tweet/1',
             'elasticsearch.method': 'PUT',

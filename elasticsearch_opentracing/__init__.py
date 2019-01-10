@@ -4,6 +4,13 @@ import warnings
 from elasticsearch import Transport, VERSION
 from opentracing.ext import tags
 
+
+default_tags = {
+    tags.COMPONENT: 'elasticsearch-py',
+    tags.DATABASE_TYPE: 'elasticsearch',
+    tags.SPAN_KIND: tags.SPAN_KIND_RPC_CLIENT
+}
+
 g_tracer = None
 g_trace_all_requests = False
 g_trace_prefix = None
@@ -57,6 +64,10 @@ ResultMembersToAdd = [
     'took',
 ]
 
+def truncated_body(body):
+    return str(body)[:1024]
+
+
 class TracingTransport(Transport):
 
     def perform_request(self, method, url, params=None, body=None):
@@ -70,16 +81,13 @@ class TracingTransport(Transport):
         if g_trace_prefix is not None:
             op_name = str(g_trace_prefix) + url
 
-        with g_tracer.start_active_span(op_name) as scope:
+        with g_tracer.start_active_span(op_name, tags=default_tags.copy()) as scope:
             span = scope.span
-            span.set_tag(tags.COMPONENT, 'elasticsearch-py')
-            span.set_tag(tags.DATABASE_TYPE, 'elasticsearch')
-            span.set_tag(tags.SPAN_KIND, tags.SPAN_KIND_RPC_CLIENT)
             span.set_tag('elasticsearch.url', url)
             span.set_tag('elasticsearch.method', method)
 
             if body:
-                span.set_tag(tags.DATABASE_STATEMENT, str(body[:1024]))
+                span.set_tag(tags.DATABASE_STATEMENT, truncated_body(body))
             if params:
                 span.set_tag('elasticsearch.params', params)
 
@@ -93,7 +101,7 @@ class TracingTransport(Transport):
             if isinstance(rv, dict):
                 for member in ResultMembersToAdd:
                     if member in rv:
-                        span.set_tag('elasticsearch.{0}'.format(member), str(rv[member]))
+                        span.set_tag('elasticsearch.{0}'.format(member), truncated_body(rv[member]))
             return rv
 
 
@@ -111,16 +119,13 @@ class _TracingTransportWithHeaders(Transport):
         if g_trace_prefix is not None:
             op_name = str(g_trace_prefix) + url
 
-        with g_tracer.start_active_span(op_name) as scope:
+        with g_tracer.start_active_span(op_name, tags=default_tags.copy()) as scope:
             span = scope.span
-            span.set_tag(tags.COMPONENT, 'elasticsearch-py')
-            span.set_tag(tags.DATABASE_TYPE, 'elasticsearch')
-            span.set_tag(tags.SPAN_KIND, tags.SPAN_KIND_RPC_CLIENT)
             span.set_tag('elasticsearch.url', url)
             span.set_tag('elasticsearch.method', method)
 
             if body:
-                span.set_tag(tags.DATABASE_STATEMENT, str(body[:1024]))
+                span.set_tag(tags.DATABASE_STATEMENT, truncated_body(body))
             if params:
                 span.set_tag('elasticsearch.params', params)
             if headers:
@@ -136,7 +141,7 @@ class _TracingTransportWithHeaders(Transport):
             if isinstance(rv, dict):
                 for member in ResultMembersToAdd:
                     if member in rv:
-                        span.set_tag('elasticsearch.{0}'.format(member), str(rv[member]))
+                        span.set_tag('elasticsearch.{0}'.format(member), truncated_body(rv[member]))
             return rv
 
 
