@@ -1,7 +1,7 @@
 import threading
 import warnings
 
-from elasticsearch import Transport
+from elasticsearch import Transport, VERSION
 from opentracing.ext import tags
 
 g_tracer = None
@@ -58,8 +58,6 @@ ResultMembersToAdd = [
 ]
 
 class TracingTransport(Transport):
-    def __init__(self, *args, **kwargs):
-        super(TracingTransport, self).__init__(*args, **kwargs)
 
     def perform_request(self, method, url, params=None, body=None):
         if not _get_tracing_enabled():
@@ -81,7 +79,7 @@ class TracingTransport(Transport):
             span.set_tag('elasticsearch.method', method)
 
             if body:
-                span.set_tag(tags.DATABASE_STATEMENT, body)
+                span.set_tag(tags.DATABASE_STATEMENT, str(body[:1024]))
             if params:
                 span.set_tag('elasticsearch.params', params)
 
@@ -97,3 +95,50 @@ class TracingTransport(Transport):
                     if member in rv:
                         span.set_tag('elasticsearch.{0}'.format(member), str(rv[member]))
             return rv
+
+
+class _TracingTransportWithHeaders(Transport):
+
+    # Provide an identical signature as Transport for version 6+
+    def perform_request(self, method, url, headers=None, params=None, body=None):
+        if not _get_tracing_enabled():
+            return super(_TracingTransportWithHeaders, self).perform_request(method, url, headers, params, body)
+
+        if g_tracer is None:
+            raise RuntimeError('No tracer has been set')
+
+        op_name = url
+        if g_trace_prefix is not None:
+            op_name = str(g_trace_prefix) + url
+
+        with g_tracer.start_active_span(op_name) as scope:
+            span = scope.span
+            span.set_tag(tags.COMPONENT, 'elasticsearch-py')
+            span.set_tag(tags.DATABASE_TYPE, 'elasticsearch')
+            span.set_tag(tags.SPAN_KIND, tags.SPAN_KIND_RPC_CLIENT)
+            span.set_tag('elasticsearch.url', url)
+            span.set_tag('elasticsearch.method', method)
+
+            if body:
+                span.set_tag(tags.DATABASE_STATEMENT, str(body[:1024]))
+            if params:
+                span.set_tag('elasticsearch.params', params)
+            if headers:
+                span.set_tag('elasticsearch.headers', headers)
+
+            try:
+                rv = super(_TracingTransportWithHeaders, self).perform_request(method, url, headers, params, body)
+            except Exception as exc:
+                span.set_tag('error', True)
+                span.set_tag('error.object', exc)
+                raise
+
+            if isinstance(rv, dict):
+                for member in ResultMembersToAdd:
+                    if member in rv:
+                        span.set_tag('elasticsearch.{0}'.format(member), str(rv[member]))
+            return rv
+
+
+if VERSION >= (6, 0, 0):
+    TracingTransport = _TracingTransportWithHeaders
