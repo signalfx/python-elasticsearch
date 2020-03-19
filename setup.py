@@ -15,7 +15,7 @@ setup(
     platforms='any',
     install_requires=[
         'elasticsearch',
-        'opentracing>=2.0,<2.1'
+        'opentracing>=2.0,<2.4'
     ],
     tests_require=[
         'elasticsearch-dsl>=5.1',
