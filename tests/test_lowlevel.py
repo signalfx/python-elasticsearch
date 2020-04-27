@@ -180,7 +180,9 @@ class TestTracing(unittest.TestCase):
         span = spans[0]
         self.assertEqual(main_span.context.span_id, span.parent_id)
         self.assertEqual(True, span.tags['error'])
-        self.assertEqual(caught_exc, span.tags['error.object'])
+        self.assertEqual(str(caught_exc.__class__), span.tags['sfx.error.object'])
+        self.assertEqual(caught_exc.__class__.__name__, span.tags['sfx.error.kind'])
+        self.assertEqual(str(caught_exc), span.tags['sfx.error.message'])
 
     def test_trace_after_error(self, mock_perform_req):
         init_tracing(self.tracer, trace_all_requests=False)
@@ -202,7 +204,9 @@ class TestTracing(unittest.TestCase):
 
         error_span, span = spans
         self.assertEqual(True, error_span.tags['error'])
-        self.assertEqual(caught_exc, error_span.tags['error.object'])
+        self.assertEqual(str(caught_exc.__class__), error_span.tags['sfx.error.object'])
+        self.assertEqual(caught_exc.__class__.__name__, error_span.tags['sfx.error.kind'])
+        self.assertEqual(str(caught_exc), error_span.tags['sfx.error.message'])
         self.assertNotIn('error', span.tags)
 
     def test_multithreading(self, mock_perform_req):
