@@ -1,3 +1,4 @@
+import traceback
 import threading
 import warnings
 
@@ -95,7 +96,10 @@ class TracingTransport(Transport):
                 rv = super(TracingTransport, self).perform_request(method, url, params, body)
             except Exception as exc:
                 span.set_tag('error', True)
-                span.set_tag('error.object', exc)
+                span.set_tag('sfx.error.object', str(exc.__class__))
+                span.set_tag('sfx.error.kind', exc.__class__.__name__)
+                span.set_tag('sfx.error.message', str(exc))
+                span.set_tag('sfx.error.stack', traceback.format_exc())
                 raise
 
             if isinstance(rv, dict):
@@ -135,7 +139,10 @@ class _TracingTransportWithHeaders(Transport):
                 rv = super(_TracingTransportWithHeaders, self).perform_request(method, url, headers, params, body)
             except Exception as exc:
                 span.set_tag('error', True)
-                span.set_tag('error.object', exc)
+                span.set_tag('sfx.error.object', str(exc.__class__))
+                span.set_tag('sfx.error.kind', exc.__class__.__name__)
+                span.set_tag('sfx.error.message', str(exc))
+                span.set_tag('sfx.error.stack', traceback.format_exc())
                 raise
 
             if isinstance(rv, dict):
