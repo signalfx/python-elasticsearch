@@ -9,7 +9,7 @@ Instalation
 
 Run the following command:
 
-    $ pip install elasticsearch_opentracing
+    $ pip install signalfx-instrumentation-elasticsearch
 
 Getting started
 ===============

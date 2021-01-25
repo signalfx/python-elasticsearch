@@ -2,10 +2,10 @@ from setuptools import setup
 
 version = open('VERSION').read()
 setup(
-    name='elasticsearch_opentracing',
+    name='signalfx-instrumentation-elasticsearch',
     version=version,
-    url='https://github.com/opentracing-contrib/python-elasticsearch/',
-    download_url='https://github.com/opentracing-contrib/python-elasticsearch/tarball/'+version,
+    url='https://github.com/signalfx/python-elasticsearch/',
+    download_url='https://github.com/signalfx/python-elasticsearch/tarball/'+version,
     license='Apache License 2.0',
     author='Carlos Alberto Cortez',
     author_email='calberto.cortez@gmail.com',
